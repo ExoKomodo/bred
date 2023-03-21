@@ -26,6 +26,8 @@ void ded_raw_enable() {
 
   struct termios raw;
   tcgetattr(STDIN_FILENO, &raw);
+  // Remove echo of characters
+  // Remove enter key press requirement for input
   raw.c_lflag &= ~(ECHO | ICANON);
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
