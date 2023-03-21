@@ -1,4 +1,73 @@
-fun main () int do
-  (puts "I am ded")
+? TODO: https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html
+
+importc "./raw.c"
+
+importc "ctype.h"
+importc "errno.h"
+importc "string.h"
+importc "termios.h"
+importc "unistd.h"
+
+? q
+let QUIT: char <- 113
+
+fun ded_dead (err: ccstring code: int) int do
+  (perror err)
+  (exit code)
+  code
+end
+
+fun ded_input_loop (input: ptr<char>) int do
+  (memset input 0 1)
+  let read_result: int <- (read STDIN_FILENO input 1)
+  (unused read_result)
+  let c: char <- (unsafe_index input 0)
+  match
+    (and
+      (eq read_result (neg 1))
+      (not (eq errno EAGAIN))) => do
+      (ded_dead "read" 1)
+    end
+    (default) => do
+      match
+        (truthy (iscntrl c)) => do
+          match
+            (eq 0 c) => do
+              (ded_input_loop input)
+            end
+            (default) => do
+              (printf "Control sequence: %d\r\n" c)
+              (ded_input_loop input)
+            end
+          end
+        end
+        (default) => do
+          match
+            (eq QUIT c) => do
+              0
+            end
+            (default) => do
+              (printf "%c" c)
+              (ded_input_loop input)
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+fun ded_setup () int do
+  (ded_raw_enable)
   0
+end
+
+fun main () int do
+  (ded_setup)
+
+  mut input: cstring <- (calloc (sizeof char) 1)
+  let result: int <- (ded_input_loop input)
+  (delete input)
+  (printf "\r\nI am ded\r\n")
+  result
 end
