@@ -1,0 +1,4 @@
+fun main () int do
+  (puts "I am ded")
+  0
+end
