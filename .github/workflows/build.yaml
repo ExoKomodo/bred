@@ -18,6 +18,6 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: daybreak-linux
+          name: ded-linux
           path: |
             ./out/Linux/ded
