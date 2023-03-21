@@ -1,6 +1,43 @@
 ? TODO: https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html
 
-fun main () int do
-  (puts "I am ded")
+importc "./raw.c"
+importc "string.h"
+importc "termios.h"
+importc "unistd.h"
+
+let QUIT: cstring <- "q"
+
+fun ded_input_loop () int do
+  ? TODO: File bug with daybreak about char expressions
+  mut c: cstring <- (calloc (sizeof char) 2)
+  let read_result: int <- (read STDIN_FILENO c 1)
+  match
+    (eq read_result 1) => do
+      match
+        (eq (strcmp QUIT c) 0) => do
+          0
+        end
+        (default) => do
+          (puts c)
+          (ded_input_loop)
+        end
+      end
+    end
+    (default) => do
+      1
+    end
+  end
+end
+
+fun ded_setup () int do
+  (ded_raw_enable)
   0
+end
+
+fun main () int do
+  (ded_setup)
+
+  let result: int <- (ded_input_loop)
+  (puts "I am ded")
+  result
 end
