@@ -11,14 +11,6 @@ importc "unistd.h"
 ? q
 let QUIT: char <- 113
 
-fun empty_editor_config (editor_config: EditorConfig) int do
-  mut input: ptr<char> <- editor_config.input
-  (delete input)
-  mut terminal_data: ptr<termios> <- editor_config.terminal_data
-  (delete terminal_data)
-  0
-end
-
 fun bred_input_loop (editor_config: EditorConfig) int do
   mut input: ptr<char> <- editor_config.input
   (memset input 0 1)
@@ -29,7 +21,8 @@ fun bred_input_loop (editor_config: EditorConfig) int do
     (and
       (eq read_result (neg 1))
       (not (eq errno EAGAIN))) => do
-      (bred_dead editor_config "read" 1)
+      (bred_dead "read" 1)
+      1
     end
     (default) => do
       match
@@ -59,8 +52,6 @@ end
 fun bred_setup () EditorConfig do
   mut editor_config: EditorConfig <- {EditorConfig
     input <- (calloc (sizeof char) 1)
-    original_terminal_data <- (malloc (sizeof termios))
-    terminal_data <- (malloc (sizeof termios))
   }
   (bred_raw_enable editor_config)
 end
