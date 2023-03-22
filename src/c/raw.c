@@ -4,31 +4,31 @@
 #include <termios.h>
 #include <unistd.h>
 
-struct termios _ded_original_termios;
+struct termios _bred_original_termios;
 
 /*
   DOC: Prevents the echoing of characters in the terminal when the user types.
-  This allows us to fully manipulate the printing of characters given to ded.
+  This allows us to fully manipulate the printing of characters given to bred.
 */
-void ded_raw_enable();
+void bred_raw_enable();
 /*
   DOC: Returns the terminal back to the mode where characters are echoed back
 */
-void _ded_raw_disable();
+void _bred_raw_disable();
 
-void _ded_raw_disable() {
-  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &_ded_original_termios) == -1) {
-    ded_dead("tcsetattr", 1);
+void _bred_raw_disable() {
+  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &_bred_original_termios) == -1) {
+    bred_dead("tcsetattr", 1);
   }
 }
 
-void ded_raw_enable() {
-  if (tcgetattr(STDIN_FILENO, &_ded_original_termios) == -1) {
-    ded_dead("tcgetattr", 1);
+void bred_raw_enable() {
+  if (tcgetattr(STDIN_FILENO, &_bred_original_termios) == -1) {
+    bred_dead("tcgetattr", 1);
   }
-  atexit(_ded_raw_disable);
+  atexit(_bred_raw_disable);
 
-  struct termios raw = _ded_original_termios;
+  struct termios raw = _bred_original_termios;
   tcgetattr(STDIN_FILENO, &raw);
   // BRKINT: When BRKINT is turned on, a break condition will cause a SIGINT signal to be sent to the program, like pressing CTRL+c
   // ICRNL: Translate CTRL+m and enter key into carriage return
@@ -56,6 +56,6 @@ void ded_raw_enable() {
   // Unit is 1/10 of a second
   raw.c_cc[VTIME] = 1;
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-    ded_dead("tcsetattr", 1);
+    bred_dead("tcsetattr", 1);
   }
 }

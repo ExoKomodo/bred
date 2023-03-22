@@ -12,12 +12,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Build ded
+      - name: Build bred
         run: |
           ./build.sh
       - name: Store artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ded-linux
+          name: bred-linux
           path: |
-            ./out/Linux/ded
+            ./out/Linux/bred
