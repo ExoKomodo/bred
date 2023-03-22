@@ -4,7 +4,7 @@ set -e
 
 cd $(dirname $BASH_SOURCE[0])
 
-export C_INCLUDE_PATH=./src/c:${C_INCLUDE_PATH}
+export C_INCLUDE_PATH=./src/include:${C_INCLUDE_PATH}
 DAYBREAK=./bin/daybreak
 
 BUILD_DIR=./out/$(uname)
