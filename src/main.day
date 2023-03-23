@@ -50,7 +50,7 @@ fun bred_input_loop (editor_config: EditorConfig) int do
 end
 
 fun bred_setup () EditorConfig do
-  mut editor_config: EditorConfig <- {EditorConfig
+  mut editor_config <- {EditorConfig
     input <- (calloc (sizeof char) 1)
   }
   (bred_raw_enable editor_config)
