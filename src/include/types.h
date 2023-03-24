@@ -6,6 +6,7 @@ typedef struct termios termios;
 struct EditorConfig {
   char* input;
   termios* terminal_data;
+  size_t number_of_rows;
 };
 typedef struct EditorConfig EditorConfig;
 int empty_editor_config(EditorConfig editor_config) {
