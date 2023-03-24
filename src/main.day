@@ -1,4 +1,5 @@
 importc "./helpers.h"
+importc "./keyboard.h"
 importc "./types.h"
 
 importc "ctype.h"
@@ -9,7 +10,7 @@ importc "termios.h"
 importc "unistd.h"
 
 ? q
-let QUIT: char <- 113
+let QUIT <- 113
 
 fun bred_input_loop (editor_config: EditorConfig) int do
   mut input: ptr<char> <- editor_config.input
@@ -29,6 +30,7 @@ fun bred_input_loop (editor_config: EditorConfig) int do
         (truthy (iscntrl c)) => do
           match
             (eq 0 c) => (bred_input_loop editor_config)
+            (eq c (BRED_CTRL_MOD QUIT)) => 0
             (default) => do
               (printf "Control sequence: %d\r\n" c)
               (bred_input_loop editor_config)
@@ -36,13 +38,8 @@ fun bred_input_loop (editor_config: EditorConfig) int do
           end
         end
         (default) => do
-          match
-            (eq QUIT c) => 0
-            (default) => do
-              (printf "%c" c)
-              (bred_input_loop editor_config)
-            end
-          end
+          (printf "%c" c)
+          (bred_input_loop editor_config)
         end
       end
     end
