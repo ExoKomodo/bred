@@ -8,7 +8,7 @@
 
 static termios _original_terminal_data;
 
-void bred_dead(const char*, int);
+int bred_dead(const char*, int);
 /*
   DOC: Returns the terminal back to the mode where characters are echoed back
 */
@@ -19,9 +19,10 @@ void _bred_raw_disable();
 */
 EditorConfig bred_raw_enable(EditorConfig);
 
-void bred_dead(const char* err, int code) {
+int bred_dead(const char* err, int code) {
   perror(err);
   exit(code);
+  return code;
 }
 
 void _bred_raw_disable() {

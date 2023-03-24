@@ -1,0 +1,12 @@
+importc "./types.h"
+
+importc "stdio.h"
+importc "string.h"
+
+fun bred_clear_screen (editor_config: EditorConfig) int do
+  (unused editor_config)
+  let sequence: cstring <- "\x1b[2J"
+  let result: int <- (write STDOUT_FILENO sequence (strlen sequence))
+  (unused result)
+  0
+end

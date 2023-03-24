@@ -9,7 +9,8 @@ importc "string.h"
 importc "termios.h"
 importc "unistd.h"
 
-? q
+import "src/commands.day"
+
 let QUIT <- 113
 let ENTER <- 13
 
@@ -54,11 +55,16 @@ fun bred_process_char (editor_config: EditorConfig c: char) int do
 end
 
 fun bred_input_loop (editor_config: EditorConfig) int do
+  let c: char <- (bred_read_char editor_config)
   match
-    (eq
-      (bred_process_char editor_config (bred_read_char editor_config))
-      0) => (bred_input_loop editor_config)
-    (default) => 0
+    (eq 0 (bred_clear_screen editor_config)) => do
+      let result: int <- (bred_process_char editor_config c)
+      match
+        (eq result 0) => (bred_input_loop editor_config)
+        (default) => 0
+      end
+    end
+    (default) => (bred_dead "bred_clear_screen" 1)
   end
 end
 
