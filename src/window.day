@@ -1,13 +1,14 @@
 import "src/types.day"
 
 importc "./types.h"
+importc "./window.h"
 
 importc "string.h"
 importc "sys/ioctl.h"
 importc "unistd.h"
 
 fun bred_clear_screen () int do
-  let sequence: cstring <- "\x1b[2J"
+  let sequence <- "\x1b[2J"
   match
     (truthy
       (write
@@ -15,20 +16,6 @@ fun bred_clear_screen () int do
         sequence
         (strlen sequence)))
       => (bred_reset_cursor)
-    (default)
-      => 1
-  end
-end
-
-fun bred_reset_cursor () int do
-  let sequence: cstring <- "\x1b[H"
-  match
-    (truthy
-      (write
-        STDOUT_FILENO
-        sequence
-        (strlen sequence)))
-      => 0
     (default)
       => 1
   end
@@ -56,5 +43,19 @@ fun bred_get_window_data () BredWindowData do
       (delete window_size_ptr)
       data
     end
+  end
+end
+
+fun bred_reset_cursor () int do
+  let sequence <- "\x1b[H"
+  match
+    (truthy
+      (write
+        STDOUT_FILENO
+        sequence
+        (strlen sequence)))
+      => 0
+    (default)
+      => 1
   end
 end

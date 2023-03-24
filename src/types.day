@@ -1,5 +1,10 @@
 importc "./types.h"
 
+type BredVector struct is
+  x: int
+  y: int
+end
+
 type BredWindowData struct is
   rows: size_t
   cols: size_t

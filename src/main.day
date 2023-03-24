@@ -17,8 +17,8 @@ let QUIT <- 113
 let ENTER <- 13
 
 fun bred_display_rows (config: BreditorConfig row: size_t) int do
-  let placeholder: cstring <- "~\r\n"
-  let last_line_placeholder: cstring <- "~"
+  let placeholder <- "~\r\n"
+  let last_line_placeholder <- "~"
   match
     (eq row (sub config.window_data.rows 1))
       => match
