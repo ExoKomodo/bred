@@ -13,42 +13,42 @@ importc "unistd.h"
 let QUIT <- 113
 let ENTER <- 13
 
-fun bred_input_loop (editor_config: EditorConfig) int do
+fun bred_read_char (editor_config: EditorConfig) char do
   mut input: ptr<char> <- editor_config.input
   (memset input 0 1)
   let read_result: int <- (read STDIN_FILENO input 1)
-  (unused read_result)
-  let c: char <- (unsafe_index input 0)
   match
     (and
       (eq read_result (neg 1))
       (not (eq errno EAGAIN))) => do
       (bred_dead "read" 1)
-      1
+      0
     end
-    (default) => do
+    (default) => (unsafe_index input 0)
+  end
+end
+
+fun bred_input_loop (editor_config: EditorConfig) int do
+  let c: char <- (bred_read_char editor_config)
+  match
+    (falsey c) => (bred_input_loop editor_config)
+    (truthy (iscntrl c)) => do
       match
-        ? NOTE: Continue due to (read ...) timeout
-        (eq 0 c) => (bred_input_loop editor_config)
-        (truthy (iscntrl c)) => do
-          match
-            (eq c (BRED_CTRL_MOD QUIT)) => 0
-            (eq c ENTER) => do
-              (printf "\r\n")
-              (bred_input_loop editor_config)
-            end
-            (default) => do
-              (printf "\r\nUnhandled control sequence: %d\r\n" c)
-              (bred_input_loop editor_config)
-            end
-          end
+        (eq c (BRED_CTRL_MOD QUIT)) => 0
+        (eq c ENTER) => do
+          (printf "\r\n")
+          (bred_input_loop editor_config)
         end
         (default) => do
-          (printf "%c" c)
-          (fflush stdout)
+          (printf "\r\nUnhandled control sequence: %d\r\n" c)
           (bred_input_loop editor_config)
         end
       end
+    end
+    (default) => do
+      (printf "%c" c)
+      (fflush stdout)
+      (bred_input_loop editor_config)
     end
   end
 end
