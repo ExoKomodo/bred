@@ -1,0 +1,48 @@
+importc "stdlib.h"
+importc "string.h"
+
+type String struct is
+  data: cstring
+  len: size_t
+end
+
+fun string_append (str: String additional: String) String do
+  let new_len: size_t <- (add str.len additional.len)
+  mut new_data: cstring <- (realloc str.data new_len)
+  match
+    (falsey new_data) => (string_new_empty)
+    (default) => do
+      (memcpy (point (unsafe_index new_data str.len)) additional.data additional.len)
+      (string_new new_data new_len)
+    end
+  end
+end
+
+fun string_free (str: String) String do
+  match
+    (truthy str.data) => do
+      let data: cstring <- str.data
+      (delete data)
+      (string_new_empty)
+    end
+    (default) => (string_new_empty)
+  end
+end
+
+fun string_new (data: ptr<char> len: size_t) String do
+  {String
+    data <- data
+    len <- len
+  }
+end
+
+fun string_new_empty () String do
+  (string_new NULL 0)
+end
+
+fun string_new_without_len (data: ptr<char>) String do
+  {String
+    data <- data
+    len <- (strlen data)
+  }
+end

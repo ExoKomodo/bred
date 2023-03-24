@@ -1,3 +1,5 @@
+import "lib/string.day"
+
 import "src/helpers.day"
 import "src/types.day"
 import "src/window.day"
