@@ -2,11 +2,28 @@ importc "./types.h"
 
 importc "stdio.h"
 importc "string.h"
+importc "unistd.h"
 
-fun bred_clear_screen (editor_config: EditorConfig) int do
-  (unused editor_config)
-  let sequence: cstring <- "\x1b[2J"
-  let result: int <- (write STDOUT_FILENO sequence (strlen sequence))
-  (unused result)
-  0
+let _bred_clear_sequence: cstring <- "\x1b[2J"
+let _bred_reposition_sequence: cstring <- "\x1b[H"
+
+fun bred_clear_screen () int do
+  match
+    (truthy
+      (write
+        STDOUT_FILENO
+        _bred_clear_sequence
+        (strlen _bred_clear_sequence)
+      )
+    ) => do
+      match
+        (truthy
+          (write
+            STDOUT_FILENO
+            _bred_reposition_sequence
+            (strlen _bred_reposition_sequence))) => 0
+      end
+    end
+  end
+  1
 end

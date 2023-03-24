@@ -1,3 +1,5 @@
+import "src/commands.day"
+
 importc "./helpers.h"
 importc "./keyboard.h"
 importc "./types.h"
@@ -8,8 +10,6 @@ importc "stdlib.h"
 importc "string.h"
 importc "termios.h"
 importc "unistd.h"
-
-import "src/commands.day"
 
 let QUIT <- 113
 let ENTER <- 13
@@ -35,7 +35,10 @@ fun bred_process_char (editor_config: EditorConfig c: char) int do
     (falsey c) => 0
     (truthy (iscntrl c)) => do
       match
-        (eq c (BRED_CTRL_MOD QUIT)) => 1
+        (eq c (BRED_CTRL_MOD QUIT)) => do
+          (bred_clear_screen)
+          1
+        end
         (eq c ENTER) => do
           (printf "\r\n")
           0
@@ -78,8 +81,6 @@ end
 fun main () int do
   mut editor_config: EditorConfig <- (bred_setup)
   let result: int <- (bred_input_loop editor_config)
-  
   (empty_editor_config editor_config)
-  (printf "\r\nI am bred\r\n")
   result
 end

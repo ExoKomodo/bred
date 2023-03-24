@@ -20,6 +20,8 @@ void _bred_raw_disable();
 EditorConfig bred_raw_enable(EditorConfig);
 
 int bred_dead(const char* err, int code) {
+  // Implicitly imported in main.day
+  bred_clear_screen();
   perror(err);
   exit(code);
   return code;
