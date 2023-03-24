@@ -14,6 +14,25 @@ importc "unistd.h"
 let QUIT <- 113
 let ENTER <- 13
 
+fun bred_display_rows (editor_config: EditorConfig row: size_t) int do
+  let placeholder: cstring <- "~\r\n"
+  match
+    (gte row editor_config.number_of_rows) => 0
+    (default) => do
+      match
+        (truthy (write STDOUT_FILENO placeholder (strlen placeholder)))
+          => (bred_display_rows editor_config (add row 1))
+        (default)
+          => (bred_dead "bred_display_rows" 1)
+      end
+    end
+  end
+end
+
+fun bred_display (editor_config: EditorConfig) int do
+  (bred_display_rows editor_config 0)
+end
+
 fun bred_loop (editor_config: EditorConfig) int do
   let c: char <- (bred_read_char editor_config)
   match
@@ -37,7 +56,7 @@ fun bred_process_char (editor_config: EditorConfig c: char) int do
     (falsey c) => 0
     (truthy (iscntrl c)) => do
       match
-        (eq c (BRED_CTRL_MOD QUIT)) => do
+        (eq c QUIT) => do
           (bred_clear_screen)
           1
         end
@@ -50,6 +69,10 @@ fun bred_process_char (editor_config: EditorConfig c: char) int do
           0
         end
       end
+    end
+    (eq c QUIT) => do
+      (bred_clear_screen)
+      1
     end
     (default) => do
       (printf "%c" c)
@@ -77,6 +100,7 @@ end
 fun bred_setup () EditorConfig do
   mut editor_config <- {EditorConfig
     input <- (calloc (sizeof char) 1)
+    number_of_rows <- 24
   }
   (bred_raw_enable editor_config)
 end
