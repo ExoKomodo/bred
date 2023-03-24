@@ -1,0 +1,20 @@
+importc "./types.h"
+
+type BredWindowData struct is
+  rows: size_t
+  cols: size_t
+end
+
+type BreditorConfig struct is
+  input: cstring
+  terminal_data: ptr<termios>
+  window_data: BredWindowData
+end
+
+fun bred_empty_brconfig (config: BreditorConfig) int do
+  mut input: cstring <- config.input
+  (delete input)
+  mut terminal_data: ptr<termios> <- config.terminal_data
+  (delete terminal_data)
+  0
+end

@@ -1,0 +1,10 @@
+import "src/window.day"
+
+importc "stdio.h"
+
+fun bred_dead (err: ccstring code: int) int do
+  (bred_clear_screen)
+  (perror err)
+  (exit code)
+  code
+end

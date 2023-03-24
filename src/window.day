@@ -1,0 +1,60 @@
+import "src/types.day"
+
+importc "./types.h"
+
+importc "string.h"
+importc "sys/ioctl.h"
+importc "unistd.h"
+
+fun bred_clear_screen () int do
+  let sequence: cstring <- "\x1b[2J"
+  match
+    (truthy
+      (write
+        STDOUT_FILENO
+        sequence
+        (strlen sequence)))
+      => (bred_reset_cursor)
+    (default)
+      => 1
+  end
+end
+
+fun bred_reset_cursor () int do
+  let sequence: cstring <- "\x1b[H"
+  match
+    (truthy
+      (write
+        STDOUT_FILENO
+        sequence
+        (strlen sequence)))
+      => 0
+    (default)
+      => 1
+  end
+end
+
+fun bred_get_window_data () BredWindowData do
+  mut window_size_ptr: ptr<winsize> <- (malloc (sizeof winsize))
+  let result: int <- (ioctl STDOUT_FILENO TIOCGWINSZ window_size_ptr)
+  let window_size: winsize <- (deref window_size_ptr)
+  match
+    (or
+      (eq result (neg 1))
+      (eq window_size.ws_col 0)) => do
+      (delete window_size_ptr)
+      {BredWindowData
+        cols <- 0
+        rows <- 0
+      }
+    end
+    (default) => do
+      let data <- {BredWindowData
+        cols <- window_size.ws_col
+        rows <- window_size.ws_row
+      }
+      (delete window_size_ptr)
+      data
+    end
+  end
+end

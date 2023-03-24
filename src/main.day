@@ -1,7 +1,9 @@
-import "src/commands.day"
+import "src/helpers.day"
+import "src/types.day"
+import "src/window.day"
 
-importc "./helpers.h"
 importc "./keyboard.h"
+importc "./raw.h"
 importc "./types.h"
 
 importc "ctype.h"
@@ -14,32 +16,32 @@ importc "unistd.h"
 let QUIT <- 113
 let ENTER <- 13
 
-fun bred_display_rows (editor_config: EditorConfig row: size_t) int do
+fun bred_display_rows (config: BreditorConfig row: size_t) int do
   let placeholder: cstring <- "~\r\n"
   match
-    (gte row editor_config.number_of_rows)
+    (gte row config.window_data.rows)
       => 0
     (default) => match
       (truthy (write STDOUT_FILENO placeholder (strlen placeholder)))
-        => (bred_display_rows editor_config (add row 1))
+        => (bred_display_rows config (add row 1))
       (default)
         => (bred_dead "bred_display_rows" 1)
     end
   end
 end
 
-fun bred_display (editor_config: EditorConfig) int do
-  (bred_display_rows editor_config 0)
+fun bred_display (config: BreditorConfig) int do
+  (bred_display_rows config 0)
   (bred_reset_cursor)
 end
 
-fun bred_loop (editor_config: EditorConfig) int do
-  let c: char <- (bred_read_char editor_config)
+fun bred_loop (config: BreditorConfig) int do
+  let c: char <- (bred_read_char config)
   match
-    (eq 0 (bred_clear_screen editor_config)) => match
-      (eq (bred_process_char editor_config c) 0) => do
-        (bred_display editor_config)
-        (bred_loop editor_config)
+    (eq 0 (bred_clear_screen config)) => match
+      (eq (bred_process_char config c) 0) => do
+        (bred_display config)
+        (bred_loop config)
       end
       (default)
         => 0
@@ -49,8 +51,8 @@ fun bred_loop (editor_config: EditorConfig) int do
   end
 end
 
-fun bred_process_char (editor_config: EditorConfig c: char) int do
-  (unused editor_config)
+fun bred_process_char (config: BreditorConfig c: char) int do
+  (unused config)
   match
     (falsey c)
       => 0
@@ -80,8 +82,8 @@ fun bred_process_char (editor_config: EditorConfig c: char) int do
   end
 end
 
-fun bred_read_char (editor_config: EditorConfig) char do
-  mut input: ptr<char> <- editor_config.input
+fun bred_read_char (config: BreditorConfig) char do
+  mut input: ptr<char> <- config.input
   (memset input 0 1)
   let read_result: int <- (read STDIN_FILENO input 1)
   match
@@ -94,17 +96,17 @@ fun bred_read_char (editor_config: EditorConfig) char do
   end
 end
 
-fun bred_setup () EditorConfig do
-  mut editor_config <- {EditorConfig
+fun bred_setup () BreditorConfig do
+  mut config <- {BreditorConfig
     input <- (calloc (sizeof char) 1)
-    number_of_rows <- 24
+    window_data <- (bred_get_window_data)
   }
-  (bred_raw_enable editor_config)
+  (bred_raw_enable config)
 end
 
 fun main () int do
-  mut editor_config: EditorConfig <- (bred_setup)
-  let result: int <- (bred_loop editor_config)
-  (empty_editor_config editor_config)
+  mut config: BreditorConfig <- (bred_setup)
+  let result: int <- (bred_loop config)
+  (bred_empty_brconfig config)
   result
 end
