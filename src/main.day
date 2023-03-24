@@ -28,28 +28,37 @@ fun bred_read_char (editor_config: EditorConfig) char do
   end
 end
 
-fun bred_input_loop (editor_config: EditorConfig) int do
-  let c: char <- (bred_read_char editor_config)
+fun bred_process_char (editor_config: EditorConfig c: char) int do
+  (unused editor_config)
   match
-    (falsey c) => (bred_input_loop editor_config)
+    (falsey c) => 0
     (truthy (iscntrl c)) => do
       match
-        (eq c (BRED_CTRL_MOD QUIT)) => 0
+        (eq c (BRED_CTRL_MOD QUIT)) => 1
         (eq c ENTER) => do
           (printf "\r\n")
-          (bred_input_loop editor_config)
+          0
         end
         (default) => do
           (printf "\r\nUnhandled control sequence: %d\r\n" c)
-          (bred_input_loop editor_config)
+          0
         end
       end
     end
     (default) => do
       (printf "%c" c)
       (fflush stdout)
-      (bred_input_loop editor_config)
+      0
     end
+  end
+end
+
+fun bred_input_loop (editor_config: EditorConfig) int do
+  match
+    (eq
+      (bred_process_char editor_config (bred_read_char editor_config))
+      0) => (bred_input_loop editor_config)
+    (default) => 0
   end
 end
 
