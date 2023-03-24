@@ -11,7 +11,7 @@ type BreditorConfig struct is
   window_data: BredWindowData
 end
 
-fun bred_empty_brconfig (config: BreditorConfig) int do
+fun bred_empty_breditor_config (config: BreditorConfig) int do
   mut input: cstring <- config.input
   (delete input)
   mut terminal_data: ptr<termios> <- config.terminal_data

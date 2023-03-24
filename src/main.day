@@ -107,6 +107,6 @@ end
 fun main () int do
   mut config: BreditorConfig <- (bred_setup)
   let result: int <- (bred_loop config)
-  (bred_empty_brconfig config)
+  (bred_empty_breditor_config config)
   result
 end
