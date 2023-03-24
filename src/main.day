@@ -11,6 +11,7 @@ importc "unistd.h"
 
 ? q
 let QUIT <- 113
+let ENTER <- 13
 
 fun bred_input_loop (editor_config: EditorConfig) int do
   mut input: ptr<char> <- editor_config.input
@@ -27,18 +28,24 @@ fun bred_input_loop (editor_config: EditorConfig) int do
     end
     (default) => do
       match
+        ? NOTE: Continue due to (read ...) timeout
+        (eq 0 c) => (bred_input_loop editor_config)
         (truthy (iscntrl c)) => do
           match
-            (eq 0 c) => (bred_input_loop editor_config)
             (eq c (BRED_CTRL_MOD QUIT)) => 0
+            (eq c ENTER) => do
+              (printf "\r\n")
+              (bred_input_loop editor_config)
+            end
             (default) => do
-              (printf "Control sequence: %d\r\n" c)
+              (printf "\r\nUnhandled control sequence: %d\r\n" c)
               (bred_input_loop editor_config)
             end
           end
         end
         (default) => do
           (printf "%c" c)
+          (fflush stdout)
           (bred_input_loop editor_config)
         end
       end
