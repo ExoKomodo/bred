@@ -4,26 +4,30 @@ importc "stdio.h"
 importc "string.h"
 importc "unistd.h"
 
-let _bred_clear_sequence: cstring <- "\x1b[2J"
-let _bred_reposition_sequence: cstring <- "\x1b[H"
-
-fun bred_clear_screen () int do
+fun bred_reset_cursor () int do
+  let sequence: cstring <- "\x1b[H"
   match
     (truthy
       (write
         STDOUT_FILENO
-        _bred_clear_sequence
-        (strlen _bred_clear_sequence)
-      )
-    ) => do
-      match
-        (truthy
-          (write
-            STDOUT_FILENO
-            _bred_reposition_sequence
-            (strlen _bred_reposition_sequence))) => 0
-      end
-    end
+        sequence
+        (strlen sequence)))
+      => 0
+    (default)
+      => 1
   end
-  1
+end
+
+fun bred_clear_screen () int do
+  let sequence: cstring <- "\x1b[2J"
+  match
+    (truthy
+      (write
+        STDOUT_FILENO
+        sequence
+        (strlen sequence)))
+      => (bred_reset_cursor)
+    (default)
+      => 1
+  end
 end
