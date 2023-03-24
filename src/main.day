@@ -14,18 +14,20 @@ importc "unistd.h"
 let QUIT <- 113
 let ENTER <- 13
 
-fun bred_read_char (editor_config: EditorConfig) char do
-  mut input: ptr<char> <- editor_config.input
-  (memset input 0 1)
-  let read_result: int <- (read STDIN_FILENO input 1)
+fun bred_loop (editor_config: EditorConfig) int do
+  let c: char <- (bred_read_char editor_config)
   match
-    (and
-      (eq read_result (neg 1))
-      (not (eq errno EAGAIN))) => do
-      (bred_dead "read" 1)
-      0
+    (eq 0 (bred_clear_screen editor_config)) => do
+      let result: int <- (bred_process_char editor_config c)
+      match
+        (eq result 0) => do
+          (bred_display editor_config)
+          (bred_loop editor_config)
+        end
+        (default) => 0
+      end
     end
-    (default) => (unsafe_index input 0)
+    (default) => (bred_dead "bred_clear_screen" 1)
   end
 end
 
@@ -57,17 +59,18 @@ fun bred_process_char (editor_config: EditorConfig c: char) int do
   end
 end
 
-fun bred_input_loop (editor_config: EditorConfig) int do
-  let c: char <- (bred_read_char editor_config)
+fun bred_read_char (editor_config: EditorConfig) char do
+  mut input: ptr<char> <- editor_config.input
+  (memset input 0 1)
+  let read_result: int <- (read STDIN_FILENO input 1)
   match
-    (eq 0 (bred_clear_screen editor_config)) => do
-      let result: int <- (bred_process_char editor_config c)
-      match
-        (eq result 0) => (bred_input_loop editor_config)
-        (default) => 0
-      end
+    (and
+      (eq read_result (neg 1))
+      (not (eq errno EAGAIN))) => do
+      (bred_dead "read" 1)
+      0
     end
-    (default) => (bred_dead "bred_clear_screen" 1)
+    (default) => (unsafe_index input 0)
   end
 end
 
@@ -80,7 +83,7 @@ end
 
 fun main () int do
   mut editor_config: EditorConfig <- (bred_setup)
-  let result: int <- (bred_input_loop editor_config)
+  let result: int <- (bred_loop editor_config)
   (empty_editor_config editor_config)
   result
 end
