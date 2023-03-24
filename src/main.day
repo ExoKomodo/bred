@@ -18,7 +18,7 @@ fun bred_display_rows (editor_config: EditorConfig row: size_t) int do
   let placeholder: cstring <- "~\r\n"
   match
     (gte row editor_config.number_of_rows)
-      => (bred_reset_cursor)
+      => 0
     (default) => match
       (truthy (write STDOUT_FILENO placeholder (strlen placeholder)))
         => (bred_display_rows editor_config (add row 1))
@@ -30,6 +30,7 @@ end
 
 fun bred_display (editor_config: EditorConfig) int do
   (bred_display_rows editor_config 0)
+  (bred_reset_cursor)
 end
 
 fun bred_loop (editor_config: EditorConfig) int do
