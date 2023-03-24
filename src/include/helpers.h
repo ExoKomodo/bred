@@ -37,7 +37,7 @@ EditorConfig bred_raw_enable(EditorConfig editor_config) {
   atexit(_bred_raw_disable);
 
   editor_config.terminal_data = malloc(sizeof(termios));
-  memcpy(editor_config.terminal_data, &_original_terminal_data, sizeof(termios));
+  *(editor_config.terminal_data) = _original_terminal_data;
 
   tcgetattr(STDIN_FILENO, editor_config.terminal_data);
   // BRKINT: When BRKINT is turned on, a break condition will cause a SIGINT signal to be sent to the program, like pressing CTRL+c
