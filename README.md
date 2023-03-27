@@ -14,10 +14,18 @@ Clone the repo recursively
 
 ```shell
 git clone --recursive git@github.com:ExoKomodo/bred
-# Bootstrap the daybreak compiler, if necessary
-export C_INCLUDE_PATH="./daybreak/src/include:${C_INCLUDE_PATH}"
-# Also tested to work with clang and zig compilers
-gcc ./bin/main.day.c -o ./bin/daybreak
+cd bred
+```
+
+### Bootstrapping daybreak
+
+Checkout whatever commit or branch you want to use, then run `bootstrap.sh`
+
+```shell
+cd daybreak
+git checkout some_commit_or_branch
+cd ..
+./bootstrap.sh
 ```
 
 ## Build
