@@ -47,8 +47,7 @@ fun bred_display (config: BreditorConfig) BreditorConfig do
     (truthy (string_write new_config.buffer))
       => (bred_breditor_config_with_buffer new_config (string_free new_config.buffer))
     (default) => do
-      let _: int <- (bred_dead "bred_display" 1)
-      (unused _)
+      (bred_dead "bred_display" 1)
       (bred_new_breditor_config config.window_data)
     end
   end
