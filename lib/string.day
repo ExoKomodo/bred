@@ -6,16 +6,33 @@ type String struct is
   len: size_t
 end
 
-fun string_append (str: String additional: String) String do
-  let new_len: size_t <- (add str.len additional.len)
-  mut new_data: cstring <- (realloc str.data new_len)
+? Generates a new string
+?   Ownership: Does not take ownership of `a` data, but copies it
+fun string_append (a: String b: String) String do
+  let new_len: size_t <- (add a.len b.len)
+  mut new_data: cstring <- (malloc (mul new_len (sizeof char)))
   match
     (falsey new_data) => (string_new_empty)
     (default) => do
-      (memcpy (point (unsafe_index new_data str.len)) additional.data additional.len)
+      ? Copy first string
+      (memcpy new_data a.data a.len)
+      ? Copy second string
+      (memcpy (point (unsafe_index new_data a.len)) b.data b.len)
       (string_new new_data new_len)
     end
   end
+end
+
+? Compares string a and b, returning values as (memcmp) does
+fun string_compare (a: String b: String) int do
+  match
+    (lt a.len b.len) => (memcmp a.data b.data a.len)
+    (default) => (memcmp a.data b.data b.len)
+  end
+end
+
+fun string_equals (a: String b: String) bool do
+  (eq 0 (string_compare a b))
 end
 
 fun string_free (str: String) String do
@@ -29,6 +46,13 @@ fun string_free (str: String) String do
   end
 end
 
+fun string_from_cstring (data: ptr<char>) String do
+  {String
+    data <- data
+    len <- (strlen data)
+  }
+end
+
 fun string_new (data: ptr<char> len: size_t) String do
   {String
     data <- data
@@ -38,11 +62,4 @@ end
 
 fun string_new_empty () String do
   (string_new NULL 0)
-end
-
-fun string_new_without_len (data: ptr<char>) String do
-  {String
-    data <- data
-    len <- (strlen data)
-  }
 end
