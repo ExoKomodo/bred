@@ -6,7 +6,7 @@ type String struct is
   len: size_t
 end
 
-? Generates a new string
+? Appends a string to an existing string, returning an entirely new string.
 ?   Ownership: Does not take ownership of `a` data, but copies it
 fun string_append (a: String b: String) String do
   let new_len: size_t <- (add a.len b.len)
@@ -16,6 +16,21 @@ fun string_append (a: String b: String) String do
     (default) => do
       ? Copy first string
       (memcpy new_data a.data a.len)
+      ? Copy second string
+      (memcpy (point (unsafe_index new_data a.len)) b.data b.len)
+      (string_new new_data new_len)
+    end
+  end
+end
+
+? Appends a string to an existing string, in-place
+?   Ownership: Does take ownership of `a` data
+fun string_append_fast (a: String b: String) String do
+  let new_len: size_t <- (add a.len b.len)
+  mut new_data: cstring <- (realloc a.data new_len)
+  match
+    (falsey new_data) => (string_new_empty)
+    (default) => do
       ? Copy second string
       (memcpy (point (unsafe_index new_data a.len)) b.data b.len)
       (string_new new_data new_len)
@@ -49,6 +64,13 @@ end
 fun string_from_cstring (data: ptr<char>) String do
   {String
     data <- data
+    len <- (strlen data)
+  }
+end
+
+fun string_from_ccstring (data: cstring) String do
+  {String
+    data <- (cast cstring data)
     len <- (strlen data)
   }
 end

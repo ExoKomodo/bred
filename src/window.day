@@ -7,6 +7,11 @@ importc "string.h"
 importc "sys/ioctl.h"
 importc "unistd.h"
 
+fun bred_buffer_clear_screen (config: BreditorConfig) BreditorConfig do
+  let cleared_buffer: String <- (string_append_fast config.buffer (string_from_cstring "\x1b[2J"))
+  (bred_buffer_reset_cursor (bred_breditor_config_with_buffer config cleared_buffer))
+end
+
 fun bred_clear_screen () int do
   let sequence <- "\x1b[2J"
   match
@@ -45,6 +50,12 @@ fun bred_get_window_data () BredWindowData do
     end
   end
 end
+
+fun bred_buffer_reset_cursor (config: BreditorConfig) BreditorConfig do
+  let reset_buffer: String <- (string_append_fast config.buffer (string_from_cstring "\x1b[H"))
+  (bred_breditor_config_with_buffer config reset_buffer)
+end
+
 
 fun bred_reset_cursor () int do
   let sequence <- "\x1b[H"

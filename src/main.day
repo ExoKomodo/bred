@@ -18,44 +18,54 @@ importc "unistd.h"
 let QUIT <- 113
 let ENTER <- 13
 
-fun bred_display_rows (config: BreditorConfig row: size_t) int do
-  let placeholder <- "~\r\n"
+fun bred_display_rows (config: BreditorConfig row: size_t) BreditorConfig do
+  let line_placeholder <- "~\r\n"
   let last_line_placeholder <- "~"
   match
     (eq row (sub config.window_data.rows 1))
-      => match
-      (truthy (write STDOUT_FILENO last_line_placeholder (strlen last_line_placeholder)))
-        => 0
-      (default)
-        => (bred_dead "bred_display_rows" 1)
+      => do
+        (bred_breditor_config_with_buffer
+          config
+          (string_append_fast config.buffer
+            (string_from_ccstring last_line_placeholder)))
     end
-    (default) => match
-      (truthy (write STDOUT_FILENO placeholder (strlen placeholder)))
-        => (bred_display_rows config (add row 1))
-      (default)
-        => (bred_dead "bred_display_rows" 1)
+    (default) => do
+      let new_config: BreditorConfig <- (bred_breditor_config_with_buffer
+        config
+        (string_append_fast config.buffer
+          (string_from_ccstring line_placeholder)))
+      (bred_display_rows new_config (add row 1))
     end
   end
 end
 
-fun bred_display (config: BreditorConfig) int do
-  (bred_display_rows config 0)
-  (bred_reset_cursor)
+fun bred_display (config: BreditorConfig) BreditorConfig do
+  let new_config: BreditorConfig <-
+    (bred_buffer_reset_cursor
+      (bred_display_rows
+        (bred_buffer_clear_screen config)
+        0))
+  match
+    (truthy
+      (write STDOUT_FILENO new_config.buffer.data new_config.buffer.len))
+      => (bred_breditor_config_with_buffer new_config (string_free new_config.buffer))
+    (default) => do
+      let _: int <- (bred_dead "bred_display" 1)
+      (unused _)
+      (bred_new_breditor_config config.window_data)
+    end
+  end
 end
 
-fun bred_loop (config: BreditorConfig) int do
+fun bred_loop (config: BreditorConfig) BreditorConfig do
   let c: char <- (bred_read_char config)
   match
-    (eq 0 (bred_clear_screen config)) => match
-      (eq (bred_process_char config c) 0) => do
-        (bred_display config)
-        (bred_loop config)
-      end
-      (default)
-        => 0
+    (eq (bred_process_char config c) 0) => do
+      let next_config: BreditorConfig <- (bred_display config)
+      (bred_loop next_config)
     end
     (default)
-      => (bred_dead "bred_clear_screen" 1)
+      => config
   end
 end
 
@@ -112,7 +122,7 @@ end
 
 fun main () int do
   mut config: BreditorConfig <- (bred_setup)
-  let result: int <- (bred_loop config)
-  (bred_free_breditor_config config)
-  result
+  let end_config: BreditorConfig <- (bred_loop config)
+  (bred_free_breditor_config end_config)
+  0
 end

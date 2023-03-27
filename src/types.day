@@ -19,6 +19,15 @@ type BreditorConfig struct is
   window_data: BredWindowData
 end
 
+fun bred_breditor_config_with_buffer (config: BreditorConfig buffer: String) BreditorConfig do
+  {BreditorConfig
+    buffer <- buffer
+    input <- config.input
+    terminal_data <- config.terminal_data
+    window_data <- config.window_data
+  }
+end
+
 fun bred_new_breditor_config (window_data: BredWindowData) BreditorConfig do
   {BreditorConfig
     buffer <- (string_new_empty)
