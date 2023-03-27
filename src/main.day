@@ -105,11 +105,9 @@ fun bred_read_char (config: BreditorConfig) char do
 end
 
 fun bred_setup () BreditorConfig do
-  mut config <- {BreditorConfig
-    input <- (calloc (sizeof char) 1)
-    window_data <- (bred_get_window_data)
-  }
-  (bred_raw_enable config)
+  (bred_raw_enable
+    (bred_new_breditor_config
+      (bred_get_window_data)))
 end
 
 fun main () int do
