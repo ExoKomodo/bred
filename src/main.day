@@ -22,13 +22,11 @@ fun bred_display_rows (config: BreditorConfig row: size_t) BreditorConfig do
   let line_placeholder <- "~\r\n"
   let last_line_placeholder <- "~"
   match
-    (eq row (sub config.window_data.rows 1))
-      => do
-        (bred_breditor_config_with_buffer
-          config
-          (string_append_fast config.buffer
-            (string_from_ccstring last_line_placeholder)))
-    end
+    (eq row (sub config.window_data.rows 1)) =>
+      (bred_breditor_config_with_buffer
+        config
+        (string_append_fast config.buffer
+          (string_from_ccstring last_line_placeholder)))
     (default) => do
       let new_config: BreditorConfig <- (bred_breditor_config_with_buffer
         config
