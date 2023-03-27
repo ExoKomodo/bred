@@ -1,5 +1,6 @@
 importc "stdlib.h"
 importc "string.h"
+importc "unistd.h"
 
 type String struct is
   data: cstring
@@ -84,4 +85,8 @@ end
 
 fun string_new_empty () String do
   (string_new NULL 0)
+end
+
+fun string_write (str: String) int do
+  (write STDOUT_FILENO str.data str.len)
 end

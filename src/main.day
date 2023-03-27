@@ -46,8 +46,7 @@ fun bred_display (config: BreditorConfig) BreditorConfig do
         (bred_buffer_clear_screen config)
         0))
   match
-    (truthy
-      (write STDOUT_FILENO new_config.buffer.data new_config.buffer.len))
+    (truthy (string_write new_config.buffer))
       => (bred_breditor_config_with_buffer new_config (string_free new_config.buffer))
     (default) => do
       let _: int <- (bred_dead "bred_display" 1)
