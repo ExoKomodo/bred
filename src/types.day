@@ -28,7 +28,7 @@ fun bred_new_breditor_config (window_data: BredWindowData) BreditorConfig do
   }
 end
 
-fun bred_empty_breditor_config (config: BreditorConfig) int do
+fun bred_free_breditor_config (config: BreditorConfig) int do
   (string_free config.buffer)
   mut input: cstring <- config.input
   (delete input)
