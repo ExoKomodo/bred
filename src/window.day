@@ -7,6 +7,11 @@ importc "string.h"
 importc "sys/ioctl.h"
 importc "unistd.h"
 
+let _bred_clear_screen_sequence <- "\x1b[2J"
+let _bred_hide_cursor_sequence <- "\x1b[?25l"
+let _bred_reset_cursor_sequence <- "\x1b[H"
+let _bred_show_cursor_sequence <- "\x1b[?25h"
+
 fun _bred_send_command(sequence: cstring) int do
   match
     (truthy
@@ -26,11 +31,11 @@ fun _bred_send_command_buffered(config: BreditorConfig sequence: ccstring) Bredi
 end
 
 fun bred_clear_screen () int do
-  (_bred_send_command "\x1b[2J")
+  (_bred_send_command _bred_clear_screen_sequence)
 end
 
 fun bred_clear_screen_buffered (config: BreditorConfig) BreditorConfig do
-  (_bred_send_command_buffered config "\x1b[2J")
+  (_bred_send_command_buffered config _bred_clear_screen_sequence)
 end
 
 fun bred_get_window_data () BredWindowData do
@@ -59,25 +64,25 @@ fun bred_get_window_data () BredWindowData do
 end
 
 fun bred_hide_cursor () int do
-  (_bred_send_command "\x1b[?25l")
+  (_bred_send_command _bred_hide_cursor_sequence)
 end
 
 fun bred_hide_cursor_buffered (config: BreditorConfig) BreditorConfig do
-  (_bred_send_command_buffered config "\x1b[?25l")
+  (_bred_send_command_buffered config _bred_hide_cursor_sequence)
 end
 
 fun bred_reset_cursor () int do
-  (_bred_send_command "\x1b[H")
+  (_bred_send_command _bred_reset_cursor_sequence)
 end
 
 fun bred_reset_cursor_buffered (config: BreditorConfig) BreditorConfig do
-  (_bred_send_command_buffered config "\x1b[H")
+  (_bred_send_command_buffered config _bred_reset_cursor_sequence)
 end
 
 fun bred_show_cursor () int do
-  (_bred_send_command "\x1b[?25h")
+  (_bred_send_command _bred_show_cursor_sequence)
 end
 
 fun bred_show_cursor_buffered (config: BreditorConfig) BreditorConfig do
-  (_bred_send_command_buffered config "\x1b[?25h")
+  (_bred_send_command_buffered config _bred_show_cursor_sequence)
 end
