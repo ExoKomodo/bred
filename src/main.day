@@ -39,9 +39,10 @@ end
 
 fun bred_display (config: BreditorConfig) BreditorConfig do
   let new_config: BreditorConfig <-
-    (bred_buffer_reset_cursor
+    (bred_reset_cursor_buffered
       (bred_display_rows
-        (bred_buffer_clear_screen config)
+        (bred_reset_cursor_buffered
+          (bred_clear_screen_buffered config))
         0))
   match
     (truthy (string_write new_config.buffer))
@@ -73,6 +74,7 @@ fun bred_process_char (config: BreditorConfig c: char) int do
     (truthy (iscntrl c)) => match
       (eq c QUIT) => do
         (bred_clear_screen)
+        (bred_reset_cursor)
         1
       end
       (eq c ENTER) => do
@@ -86,6 +88,7 @@ fun bred_process_char (config: BreditorConfig c: char) int do
     end
     (eq c QUIT) => do
       (bred_clear_screen)
+      (bred_reset_cursor)
       1
     end
     (default) => do

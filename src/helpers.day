@@ -4,6 +4,7 @@ importc "stdio.h"
 
 fun bred_dead (err: ccstring code: int) int do
   (bred_clear_screen)
+  (bred_reset_cursor)
   (perror err)
   (exit code)
   code

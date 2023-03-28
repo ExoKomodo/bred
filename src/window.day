@@ -7,23 +7,30 @@ importc "string.h"
 importc "sys/ioctl.h"
 importc "unistd.h"
 
-fun bred_buffer_clear_screen (config: BreditorConfig) BreditorConfig do
-  let cleared_buffer: String <- (string_append_fast config.buffer (string_from_cstring "\x1b[2J"))
-  (bred_buffer_reset_cursor (bred_breditor_config_with_buffer config cleared_buffer))
-end
-
-fun bred_clear_screen () int do
-  let sequence <- "\x1b[2J"
+fun _bred_send_command(sequence: cstring) int do
   match
     (truthy
       (write
         STDOUT_FILENO
         sequence
         (strlen sequence)))
-      => (bred_reset_cursor)
+      => 0
     (default)
       => 1
   end
+end
+
+fun _bred_send_command_buffered(config: BreditorConfig sequence: ccstring) BreditorConfig do
+  let buffer: String <- (string_append_fast config.buffer (string_from_ccstring sequence))
+  (bred_breditor_config_with_buffer config buffer)
+end
+
+fun bred_clear_screen () int do
+  (_bred_send_command "\x1b[2J")
+end
+
+fun bred_clear_screen_buffered (config: BreditorConfig) BreditorConfig do
+  (_bred_send_command_buffered config "\x1b[2J")
 end
 
 fun bred_get_window_data () BredWindowData do
@@ -51,22 +58,26 @@ fun bred_get_window_data () BredWindowData do
   end
 end
 
-fun bred_buffer_reset_cursor (config: BreditorConfig) BreditorConfig do
-  let reset_buffer: String <- (string_append_fast config.buffer (string_from_cstring "\x1b[H"))
-  (bred_breditor_config_with_buffer config reset_buffer)
+fun bred_hide_cursor () int do
+  (_bred_send_command "\x1b[?25l")
 end
 
+fun bred_hide_cursor_buffered (config: BreditorConfig) BreditorConfig do
+  (_bred_send_command_buffered config "\x1b[?25l")
+end
 
 fun bred_reset_cursor () int do
-  let sequence <- "\x1b[H"
-  match
-    (truthy
-      (write
-        STDOUT_FILENO
-        sequence
-        (strlen sequence)))
-      => 0
-    (default)
-      => 1
-  end
+  (_bred_send_command "\x1b[H")
+end
+
+fun bred_reset_cursor_buffered (config: BreditorConfig) BreditorConfig do
+  (_bred_send_command_buffered config "\x1b[H")
+end
+
+fun bred_show_cursor () int do
+  (_bred_send_command "\x1b[?25h")
+end
+
+fun bred_show_cursor_buffered (config: BreditorConfig) BreditorConfig do
+  (_bred_send_command_buffered config "\x1b[?25h")
 end
