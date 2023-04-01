@@ -1,0 +1,30 @@
+{
+	"name": "Dev Container",
+	"image": "exokomodo/daybreak:devcontainer-latest",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ExoKomodo.daybreak-lang",
+				"GitHub.vscode-pull-request-github",
+				"Gruntfuggly.todo-tree",
+				"SonarSource.sonarlint-vscode",
+				"Tyriar.sort-lines",
+				"ms-vscode.cpptools-extension-pack",
+				"redhat.vscode-yaml",
+				"streetsidesoftware.code-spell-checker",
+				"wayou.vscode-todo-highlight",
+				"william-voyek.vscode-nginx"
+			]
+		}
+	},
+	"containerEnv": {},
+	"runArgs": [
+		"--init"
+	],
+	"mounts": [
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+	],
+	"features": {
+		"github-cli": "latest"
+	}
+}
