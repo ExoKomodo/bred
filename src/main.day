@@ -17,10 +17,11 @@ importc "unistd.h"
 
 let QUIT <- 113
 let ENTER <- 13
+let ERASE_IN_LINE <- "\x1b[K"
 
 fun bred_display_rows (config: BreditorConfig row: size_t) BreditorConfig do
-  let line_placeholder <- "~\r\n"
-  let last_line_placeholder <- "~"
+  let line_placeholder: cstring <- (interpolate_cstring "~" (interpolate_cstring "\x1b[K" "\r\n"))
+  let last_line_placeholder: cstring <- (interpolate_cstring "~" "\x1b[K")
   match
     (eq row (sub config.window_data.rows 1)) =>
       (bred_breditor_config_with_buffer
@@ -41,8 +42,7 @@ fun bred_display (config: BreditorConfig) BreditorConfig do
   let new_config: BreditorConfig <-
     (bred_reset_cursor_buffered
       (bred_display_rows
-        (bred_reset_cursor_buffered
-          (bred_clear_screen_buffered config))
+        (bred_reset_cursor_buffered config)
         0))
   match
     (truthy (string_write new_config.buffer))
