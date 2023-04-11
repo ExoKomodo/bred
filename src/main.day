@@ -1,73 +1,169 @@
-? TODO: https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html
+import "lib/string.day"
 
-importc "./raw.c"
+import "src/helpers.day"
+import "src/types.day"
+import "src/window.day"
+
+importc "./keyboard.h"
+importc "./raw.h"
+importc "./types.h"
 
 importc "ctype.h"
 importc "errno.h"
+importc "stdlib.h"
 importc "string.h"
 importc "termios.h"
 importc "unistd.h"
 
-? q
-let QUIT: char <- 113
+let QUIT <- 113
+let ENTER <- 13
+let ERASE_IN_LINE <- "\x1b[K"
+let WELCOME_MESSAGE <- "Welcome to the Breditor and may it give you life"
 
-fun bred_dead (err: ccstring code: int) int do
-  (perror err)
-  (exit code)
-  code
+let W <- 119
+let A <- 97
+let S <- 115
+let D <- 100
+
+fun bred_display_rows (config: BreditorConfig row: size_t) BreditorConfig do
+  let beginning <- "~\x1b[K "
+  let final <- "\r\n"
+  let new_config: BreditorConfig <-
+    (bred_breditor_config_with_buffer
+      config
+      (string_append_fast config.buffer
+        (string_from_ccstring beginning)))
+  match
+    (eq row (sub config.window_data.rows 1)) => new_config
+    (eq row (div config.window_data.rows 2)) =>
+      (bred_display_rows
+        (bred_breditor_config_with_buffer
+          new_config
+          (string_append_fast
+            (string_append_fast new_config.buffer
+              (string_from_ccstring WELCOME_MESSAGE))
+            (string_from_ccstring final)))
+        (add row 1))
+    (default) =>
+      (bred_display_rows
+        (bred_breditor_config_with_buffer
+          new_config
+          (string_append_fast new_config.buffer
+            (string_from_ccstring final)))
+        (add row 1))
+  end
 end
 
-fun bred_input_loop (input: ptr<char>) int do
-  (memset input 0 1)
-  let read_result: int <- (read STDIN_FILENO input 1)
-  (unused read_result)
-  let c: char <- (unsafe_index input 0)
+fun bred_display (config: BreditorConfig) BreditorConfig do
+  let new_config: BreditorConfig <-
+    (bred_set_cursor_buffered
+      (bred_display_rows
+          (bred_reset_cursor_buffered config)
+        0))
   match
-    (and
-      (eq read_result (neg 1))
-      (not (eq errno EAGAIN))) => do
-      (bred_dead "read" 1)
-    end
+    (truthy (string_write new_config.buffer)) =>
+      (bred_breditor_config_with_buffer
+        new_config
+        (string_free new_config.buffer))
     (default) => do
-      match
-        (truthy (iscntrl c)) => do
-          match
-            (eq 0 c) => do
-              (bred_input_loop input)
-            end
-            (default) => do
-              (printf "Control sequence: %d\r\n" c)
-              (bred_input_loop input)
-            end
-          end
-        end
-        (default) => do
-          match
-            (eq QUIT c) => do
-              0
-            end
-            (default) => do
-              (printf "%c" c)
-              (bred_input_loop input)
-            end
-          end
-        end
-      end
+      (bred_dead "bred_display" 1)
+      config
     end
   end
 end
 
-fun bred_setup () int do
-  (bred_raw_enable)
-  0
+fun bred_loop (config: BreditorConfig) BreditorConfig do
+  let c: char <- (bred_read_char config)
+  let new_config: BreditorConfig <- (bred_process_char config c)
+  match
+    (eq new_config.should_exit false) =>
+      (bred_loop
+        (bred_display new_config))
+    (default) => config
+  end
+end
+
+fun bred_process_char (config: BreditorConfig c: char) BreditorConfig do
+  match
+    (falsey c) => config
+    (truthy (iscntrl c)) => match
+      (eq c QUIT) =>
+        (bred_breditor_config_exit
+          (bred_reset_cursor_buffered
+            (bred_clear_screen_buffered config)))
+      (eq c ENTER) =>
+        (bred_breditor_config_with_buffer
+          config
+          (string_append_fast config.buffer
+            (string_from_ccstring "\r\n")))
+      (default) => config
+    end
+    (eq c W) =>
+      (bred_set_cursor_buffered
+        (bred_breditor_config_with_cursor
+          config
+          {BredVector
+            x <- config.cursor.x
+            y <- (sub config.cursor.y 1)
+          }))
+    (eq c A) =>
+      (bred_set_cursor_buffered
+        (bred_breditor_config_with_cursor
+          config
+          {BredVector
+            x <- (sub config.cursor.x 1)
+            y <- config.cursor.y
+          }))
+    (eq c S) =>
+      (bred_set_cursor_buffered
+        (bred_breditor_config_with_cursor
+          config
+          {BredVector
+            x <- config.cursor.x
+            y <- (add config.cursor.y 1)
+          }))
+    (eq c D) =>
+      (bred_set_cursor_buffered
+        (bred_breditor_config_with_cursor
+          config
+          {BredVector
+            x <- (add config.cursor.x 1)
+            y <- config.cursor.y
+          }))
+    (eq c QUIT) =>
+      (bred_breditor_config_exit
+        (bred_reset_cursor_buffered
+          (bred_clear_screen_buffered config)))
+    (default) => do
+      (printf "%c" c)
+      (fflush stdout)
+      config
+    end
+  end
+end
+
+fun bred_read_char (config: BreditorConfig) char do
+  mut input: ptr<char> <- config.input
+  (memset input 0 1)
+  let read_result: int <- (read STDIN_FILENO input 1)
+  match
+    (and
+      (eq read_result (neg 1))
+      (not (eq errno EAGAIN))) => (bred_dead "read" 1)
+    (default) =>
+      (unsafe_index input 0)
+  end
+end
+
+fun bred_setup () BreditorConfig do
+  (bred_raw_enable
+    (bred_new_breditor_config
+      (bred_get_window_data)))
 end
 
 fun main () int do
-  (bred_setup)
-
-  mut input: cstring <- (calloc (sizeof char) 1)
-  let result: int <- (bred_input_loop input)
-  (delete input)
-  (printf "\r\nI am bred\r\n")
-  result
+  mut config: BreditorConfig <- (bred_setup)
+  let end_config: BreditorConfig <- (bred_loop config)
+  (bred_free_breditor_config end_config)
+  0
 end

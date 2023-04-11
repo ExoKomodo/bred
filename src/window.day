@@ -1,0 +1,111 @@
+import "src/types.day"
+
+importc "./types.h"
+importc "./window.h"
+
+importc "string.h"
+importc "sys/ioctl.h"
+importc "unistd.h"
+
+let _bred_clear_screen_sequence <- "\x1b[2J"
+let _bred_hide_cursor_sequence <- "\x1b[?25l"
+let _bred_reset_cursor_sequence <- "\x1b[H"
+let _bred_show_cursor_sequence <- "\x1b[?25h"
+let _bred_set_cursor_sequence <- "\x1b[%d;%dH"
+
+fun _bred_send_command(sequence: cstring) int do
+  match
+    (truthy
+      (write
+        STDOUT_FILENO
+        sequence
+        (strlen sequence))) => 0
+    (default) => 1
+  end
+end
+
+fun _bred_send_command_buffered(config: BreditorConfig sequence: ccstring) BreditorConfig do
+  let buffer: String <- (string_append_fast config.buffer (string_from_ccstring sequence))
+  (bred_breditor_config_with_buffer config buffer)
+end
+
+fun bred_clear_screen () int do
+  (_bred_send_command _bred_clear_screen_sequence)
+end
+
+fun bred_clear_screen_buffered (config: BreditorConfig) BreditorConfig do
+  (_bred_send_command_buffered config _bred_clear_screen_sequence)
+end
+
+fun bred_get_window_data () BredWindowData do
+  mut window_size_ptr: ptr<winsize> <- (malloc (sizeof winsize))
+  let result: int <- (ioctl STDOUT_FILENO TIOCGWINSZ window_size_ptr)
+  let window_size: winsize <- (deref window_size_ptr)
+  match
+    (or
+      (eq result (neg 1))
+      (eq window_size.ws_col 0)) => do
+      (delete window_size_ptr)
+      {BredWindowData
+        cols <- 0
+        rows <- 0
+      }
+    end
+    (default) => do
+      let data <- {BredWindowData
+        cols <- window_size.ws_col
+        rows <- window_size.ws_row
+      }
+      (delete window_size_ptr)
+      data
+    end
+  end
+end
+
+fun bred_hide_cursor () int do
+  (_bred_send_command _bred_hide_cursor_sequence)
+end
+
+fun bred_hide_cursor_buffered (config: BreditorConfig) BreditorConfig do
+  (_bred_send_command_buffered config _bred_hide_cursor_sequence)
+end
+
+fun bred_set_cursor (position: BredVector) int do
+  let length: size_t <- 32
+  mut formatted_move: cstring <- (malloc (mul length (sizeof char)))
+  (snprintf
+    formatted_move
+    length
+    _bred_set_cursor_sequence
+    (add position.y 1)
+    (add position.x 1))
+  (_bred_send_command formatted_move)
+end
+
+fun bred_set_cursor_buffered (config: BreditorConfig) BreditorConfig do
+  let length: size_t <- 32
+  mut formatted_move: cstring <- (malloc (mul length (sizeof char)))
+  (snprintf
+    formatted_move
+    length
+    _bred_set_cursor_sequence
+    (add config.cursor.y 1)
+    (add config.cursor.x 1))
+  (_bred_send_command_buffered config formatted_move)
+end
+
+fun bred_reset_cursor () int do
+  (_bred_send_command _bred_reset_cursor_sequence)
+end
+
+fun bred_reset_cursor_buffered (config: BreditorConfig) BreditorConfig do
+  (_bred_send_command_buffered config _bred_reset_cursor_sequence)
+end
+
+fun bred_show_cursor () int do
+  (_bred_send_command _bred_show_cursor_sequence)
+end
+
+fun bred_show_cursor_buffered (config: BreditorConfig) BreditorConfig do
+  (_bred_send_command_buffered config _bred_show_cursor_sequence)
+end

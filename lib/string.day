@@ -1,0 +1,92 @@
+importc "stdlib.h"
+importc "string.h"
+importc "unistd.h"
+
+type String struct is
+  data: cstring
+  len: size_t
+end
+
+? Appends a string to an existing string, returning an entirely new string.
+?   Ownership: Does not take ownership of `a` data, but copies it
+fun string_append (a: String b: String) String do
+  let new_len: size_t <- (add a.len b.len)
+  mut new_data: cstring <- (malloc (mul new_len (sizeof char)))
+  match
+    (falsey new_data) => (string_new_empty)
+    (default) => do
+      ? Copy first string
+      (memcpy new_data a.data a.len)
+      ? Copy second string
+      (memcpy (point (unsafe_index new_data a.len)) b.data b.len)
+      (string_new new_data new_len)
+    end
+  end
+end
+
+? Appends a string to an existing string, in-place
+?   Ownership: Does take ownership of `a` data
+fun string_append_fast (a: String b: String) String do
+  let new_len: size_t <- (add a.len b.len)
+  mut new_data: cstring <- (realloc a.data new_len)
+  match
+    (falsey new_data) => (string_new_empty)
+    (default) => do
+      ? Copy second string
+      (memcpy (point (unsafe_index new_data a.len)) b.data b.len)
+      (string_new new_data new_len)
+    end
+  end
+end
+
+? Compares string a and b, returning values as (memcmp) does
+fun string_compare (a: String b: String) int do
+  match
+    (lt a.len b.len) => (memcmp a.data b.data a.len)
+    (default) => (memcmp a.data b.data b.len)
+  end
+end
+
+fun string_equals (a: String b: String) bool do
+  (eq 0 (string_compare a b))
+end
+
+fun string_free (str: String) String do
+  match
+    (truthy str.data) => do
+      let data: cstring <- str.data
+      (delete data)
+      (string_new_empty)
+    end
+    (default) => (string_new_empty)
+  end
+end
+
+fun string_from_cstring (data: ptr<char>) String do
+  {String
+    data <- data
+    len <- (strlen data)
+  }
+end
+
+fun string_from_ccstring (data: cstring) String do
+  {String
+    data <- (cast cstring data)
+    len <- (strlen data)
+  }
+end
+
+fun string_new (data: ptr<char> len: size_t) String do
+  {String
+    data <- data
+    len <- len
+  }
+end
+
+fun string_new_empty () String do
+  (string_new NULL 0)
+end
+
+fun string_write (str: String) int do
+  (write STDOUT_FILENO str.data str.len)
+end
