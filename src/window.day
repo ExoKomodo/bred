@@ -11,6 +11,7 @@ let _bred_clear_screen_sequence <- "\x1b[2J"
 let _bred_hide_cursor_sequence <- "\x1b[?25l"
 let _bred_reset_cursor_sequence <- "\x1b[H"
 let _bred_show_cursor_sequence <- "\x1b[?25h"
+let _bred_set_cursor_sequence <- "\x1b[%d;%dH"
 
 fun _bred_send_command(sequence: cstring) int do
   match
@@ -18,10 +19,8 @@ fun _bred_send_command(sequence: cstring) int do
       (write
         STDOUT_FILENO
         sequence
-        (strlen sequence)))
-      => 0
-    (default)
-      => 1
+        (strlen sequence))) => 0
+    (default) => 1
   end
 end
 
@@ -69,6 +68,30 @@ end
 
 fun bred_hide_cursor_buffered (config: BreditorConfig) BreditorConfig do
   (_bred_send_command_buffered config _bred_hide_cursor_sequence)
+end
+
+fun bred_set_cursor (position: BredVector) int do
+  let length: size_t <- 32
+  mut formatted_move: cstring <- (malloc (mul length (sizeof char)))
+  (snprintf
+    formatted_move
+    length
+    _bred_set_cursor_sequence
+    (add position.y 1)
+    (add position.x 1))
+  (_bred_send_command formatted_move)
+end
+
+fun bred_set_cursor_buffered (config: BreditorConfig) BreditorConfig do
+  let length: size_t <- 32
+  mut formatted_move: cstring <- (malloc (mul length (sizeof char)))
+  (snprintf
+    formatted_move
+    length
+    _bred_set_cursor_sequence
+    (add config.cursor.y 1)
+    (add config.cursor.x 1))
+  (_bred_send_command_buffered config formatted_move)
 end
 
 fun bred_reset_cursor () int do

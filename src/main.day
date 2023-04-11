@@ -20,6 +20,11 @@ let ENTER <- 13
 let ERASE_IN_LINE <- "\x1b[K"
 let WELCOME_MESSAGE <- "Welcome to the Breditor and may it give you life"
 
+let W <- 119
+let A <- 97
+let S <- 115
+let D <- 100
+
 fun bred_display_rows (config: BreditorConfig row: size_t) BreditorConfig do
   let beginning <- "~\x1b[K "
   let final <- "\r\n"
@@ -39,74 +44,100 @@ fun bred_display_rows (config: BreditorConfig row: size_t) BreditorConfig do
               (string_from_ccstring WELCOME_MESSAGE))
             (string_from_ccstring final)))
         (add row 1))
-    (default) => do
+    (default) =>
       (bred_display_rows
         (bred_breditor_config_with_buffer
           new_config
           (string_append_fast new_config.buffer
             (string_from_ccstring final)))
         (add row 1))
-    end
   end
 end
 
 fun bred_display (config: BreditorConfig) BreditorConfig do
   let new_config: BreditorConfig <-
-    (bred_reset_cursor_buffered
+    (bred_set_cursor_buffered
       (bred_display_rows
-        (bred_reset_cursor_buffered config)
+          (bred_reset_cursor_buffered config)
         0))
   match
-    (truthy (string_write new_config.buffer))
-      => (bred_breditor_config_with_buffer new_config (string_free new_config.buffer))
+    (truthy (string_write new_config.buffer)) =>
+      (bred_breditor_config_with_buffer
+        new_config
+        (string_free new_config.buffer))
     (default) => do
       (bred_dead "bred_display" 1)
-      (bred_new_breditor_config config.window_data)
+      config
     end
   end
 end
 
 fun bred_loop (config: BreditorConfig) BreditorConfig do
   let c: char <- (bred_read_char config)
+  let new_config: BreditorConfig <- (bred_process_char config c)
   match
-    (eq (bred_process_char config c) 0) => do
-      let next_config: BreditorConfig <- (bred_display config)
-      (bred_loop next_config)
-    end
-    (default)
-      => config
+    (eq new_config.should_exit false) =>
+      (bred_loop
+        (bred_display new_config))
+    (default) => config
   end
 end
 
-fun bred_process_char (config: BreditorConfig c: char) int do
-  (unused config)
+fun bred_process_char (config: BreditorConfig c: char) BreditorConfig do
   match
-    (falsey c)
-      => 0
+    (falsey c) => config
     (truthy (iscntrl c)) => match
-      (eq c QUIT) => do
-        (bred_clear_screen)
-        (bred_reset_cursor)
-        1
-      end
-      (eq c ENTER) => do
-        (printf "\r\n")
-        0
-      end
-      (default) => do
-        (printf "\r\nUnhandled control sequence: %d\r\n" c)
-        0
-      end
+      (eq c QUIT) =>
+        (bred_breditor_config_exit
+          (bred_reset_cursor_buffered
+            (bred_clear_screen_buffered config)))
+      (eq c ENTER) =>
+        (bred_breditor_config_with_buffer
+          config
+          (string_append_fast config.buffer
+            (string_from_ccstring "\r\n")))
+      (default) => config
     end
-    (eq c QUIT) => do
-      (bred_clear_screen)
-      (bred_reset_cursor)
-      1
-    end
+    (eq c W) =>
+      (bred_set_cursor_buffered
+        (bred_breditor_config_with_cursor
+          config
+          {BredVector
+            x <- config.cursor.x
+            y <- (sub config.cursor.y 1)
+          }))
+    (eq c A) =>
+      (bred_set_cursor_buffered
+        (bred_breditor_config_with_cursor
+          config
+          {BredVector
+            x <- (sub config.cursor.x 1)
+            y <- config.cursor.y
+          }))
+    (eq c S) =>
+      (bred_set_cursor_buffered
+        (bred_breditor_config_with_cursor
+          config
+          {BredVector
+            x <- config.cursor.x
+            y <- (add config.cursor.y 1)
+          }))
+    (eq c D) =>
+      (bred_set_cursor_buffered
+        (bred_breditor_config_with_cursor
+          config
+          {BredVector
+            x <- (add config.cursor.x 1)
+            y <- config.cursor.y
+          }))
+    (eq c QUIT) =>
+      (bred_breditor_config_exit
+        (bred_reset_cursor_buffered
+          (bred_clear_screen_buffered config)))
     (default) => do
       (printf "%c" c)
       (fflush stdout)
-      0
+      config
     end
   end
 end
@@ -118,10 +149,9 @@ fun bred_read_char (config: BreditorConfig) char do
   match
     (and
       (eq read_result (neg 1))
-      (not (eq errno EAGAIN)))
-      => (bred_dead "read" 1)
-    (default)
-      => (unsafe_index input 0)
+      (not (eq errno EAGAIN))) => (bred_dead "read" 1)
+    (default) =>
+      (unsafe_index input 0)
   end
 end
 

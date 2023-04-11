@@ -14,7 +14,9 @@ end
 
 type BreditorConfig struct is
   buffer: String
+  cursor: BredVector
   input: cstring
+  should_exit: bool
   terminal_data: ptr<termios>
   window_data: BredWindowData
 end
@@ -22,7 +24,31 @@ end
 fun bred_breditor_config_with_buffer (config: BreditorConfig buffer: String) BreditorConfig do
   {BreditorConfig
     buffer <- buffer
+    cursor <- config.cursor
     input <- config.input
+    should_exit <- config.should_exit
+    terminal_data <- config.terminal_data
+    window_data <- config.window_data
+  }
+end
+
+fun bred_breditor_config_with_cursor (config: BreditorConfig cursor: BredVector) BreditorConfig do
+  {BreditorConfig
+    buffer <- config.buffer
+    cursor <- cursor
+    input <- config.input
+    should_exit <- config.should_exit
+    terminal_data <- config.terminal_data
+    window_data <- config.window_data
+  }
+end
+
+fun bred_breditor_config_exit (config: BreditorConfig) BreditorConfig do
+  {BreditorConfig
+    buffer <- config.buffer
+    cursor <- config.cursor
+    input <- config.input
+    should_exit <- true
     terminal_data <- config.terminal_data
     window_data <- config.window_data
   }
@@ -31,7 +57,11 @@ end
 fun bred_new_breditor_config (window_data: BredWindowData) BreditorConfig do
   {BreditorConfig
     buffer <- (string_new_empty)
+    cursor <- {BredVector
+      x <- 0
+      y <- 0}
     input <- (calloc (sizeof char) 1)
+    should_exit <- false
     terminal_data <- NULL
     window_data <- window_data
   }
