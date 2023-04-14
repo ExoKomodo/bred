@@ -63,6 +63,9 @@ fun string_free (str: String) String do
 end
 
 fun string_from_cstring (data: ptr<char>) String do
+  let len: size_t <- (strlen data)
+  mut copied_data: ptr<char> <- (malloc len)
+  (memcpy copied_data data len)
   {String
     data <- data
     len <- (strlen data)
@@ -70,10 +73,7 @@ fun string_from_cstring (data: ptr<char>) String do
 end
 
 fun string_from_ccstring (data: cstring) String do
-  {String
-    data <- (cast cstring data)
-    len <- (strlen data)
-  }
+  (string_from_cstring (cast cstring data))
 end
 
 fun string_new (data: ptr<char> len: size_t) String do
