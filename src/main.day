@@ -15,6 +15,7 @@ importc "string.h"
 importc "termios.h"
 importc "unistd.h"
 
+let NEWLINE <- 10
 let QUIT <- 113
 let ENTER <- 13
 let ERASE_IN_LINE <- "\x1b[K"
@@ -117,14 +118,31 @@ fun bred_process_char (config: BreditorConfig c_ptr: cstring) BreditorConfig do
         (eq
           0
           config.output_buffer.len) => config
-        (default) =>
+        (default) => do
+          let newlineCheck: char <- (unsafe_index config.output_buffer.data (sub config.output_buffer.len 1))
           ? TODO: Remove 2 chars for newlines: \r\n
-          (bred_breditor_config_with_output_buffer
-            config
-            {String
-              data <- config.output_buffer.data
-              len <- (sub config.output_buffer.len 1)
-            })
+          let nextConfig: BreditorConfig <-
+            (bred_breditor_config_with_output_buffer
+              config
+              {String
+                data <- config.output_buffer.data
+                len <- (sub config.output_buffer.len 1)
+              })
+          match
+            (and
+              (eq newlineCheck NEWLINE)
+              (gt
+                nextConfig.output_buffer.len
+                0)) =>
+              (bred_breditor_config_with_output_buffer
+                nextConfig
+                {String
+                  data <- nextConfig.output_buffer.data
+                  len <- (sub nextConfig.output_buffer.len 1)
+                })
+            (default) => nextConfig
+          end
+        end
       end
     (default) =>
       (bred_breditor_config_with_output_buffer
