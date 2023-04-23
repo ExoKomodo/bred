@@ -120,7 +120,6 @@ fun bred_process_char (config: BreditorConfig c_ptr: cstring) BreditorConfig do
           config.output_buffer.len) => config
         (default) => do
           let newlineCheck: char <- (unsafe_index config.output_buffer.data (sub config.output_buffer.len 1))
-          ? TODO: Remove 2 chars for newlines: \r\n
           let nextConfig: BreditorConfig <-
             (bred_breditor_config_with_output_buffer
               config
