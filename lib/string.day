@@ -12,11 +12,11 @@ type StringErr struct is
 end
 
 type StringValue union is
-  value: ptr<char>
+  value: char
   err: StringErr
 end
 
-let STRING_ERR_FORMAT = "%.*s"
+let STRING_ERR_FORMAT <- "%.*s"
 
 fun string_new_err (message: String) StringErr do
   {StringErr
@@ -106,8 +106,10 @@ fun string_index (str: String index: size_t) StringValue do
         str.data
         str.len
         index)
+      mut err: String <- (string_from_ccstring "String was improperly indexed")
       {StringValue
-        err <- (string_from_ccstring "String was improperly indexed")
+        value <- 0
+        err <- err
       }
     end
   end
