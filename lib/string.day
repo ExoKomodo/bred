@@ -7,6 +7,23 @@ type String struct is
   len: size_t
 end
 
+type StringErr struct is
+  message: String
+end
+
+type StringValue union is
+  value: ptr<char>
+  err: StringErr
+end
+
+let STRING_ERR_FORMAT = "%.*s"
+
+fun string_new_err (message: String) StringErr do
+  {StringErr
+    message <- message
+  }
+end
+
 ? Appends a string to an existing string, returning an entirely new string.
 ?   Ownership: Does not take ownership of `a` data, but copies it
 fun string_append (a: String b: String) String do
@@ -74,6 +91,26 @@ end
 
 fun string_from_ccstring (data: cstring) String do
   (string_from_cstring (cast cstring data))
+end
+
+fun string_index (str: String index: size_t) StringValue do
+  match
+    (gt str.len index) =>
+      {StringValue
+        value <- (unsafe_index str.data index)
+      }
+    (default) => do
+      (fprintf
+        stderr
+        "String: { data: %p, len: %ld } was improperly indexed with index: %ld\n"
+        str.data
+        str.len
+        index)
+      {StringValue
+        err <- (string_from_ccstring "String was improperly indexed")
+      }
+    end
+  end
 end
 
 fun string_new (data: ptr<char> len: size_t) String do
