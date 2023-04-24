@@ -7,6 +7,33 @@ type String struct is
   len: size_t
 end
 
+type StringErr struct is
+  message: String
+end
+
+type StringValueKind enum is
+  Value <- 0
+  Error <- 1
+end
+
+type StringValueUnion union is
+  value: char
+  error: StringErr
+end
+
+type StringValue struct is
+  inner: StringValueUnion
+  kind: StringValueKind
+end
+
+let STRING_ERR_FORMAT <- "%.*s"
+
+fun string_new_err (message: String) StringErr do
+  {StringErr
+    message <- message
+  }
+end
+
 ? Appends a string to an existing string, returning an entirely new string.
 ?   Ownership: Does not take ownership of `a` data, but copies it
 fun string_append (a: String b: String) String do
@@ -63,6 +90,9 @@ fun string_free (str: String) String do
 end
 
 fun string_from_cstring (data: ptr<char>) String do
+  let len: size_t <- (strlen data)
+  mut copied_data: ptr<char> <- (malloc len)
+  (memcpy copied_data data len)
   {String
     data <- data
     len <- (strlen data)
@@ -70,10 +100,35 @@ fun string_from_cstring (data: ptr<char>) String do
 end
 
 fun string_from_ccstring (data: cstring) String do
-  {String
-    data <- (cast cstring data)
-    len <- (strlen data)
-  }
+  (string_from_cstring (cast cstring data))
+end
+
+fun string_index (str: String index: size_t) StringValue do
+  match
+    (gt str.len index) =>
+      {StringValue
+        inner <- {StringValueUnion
+          value <- (unsafe_index str.data index)
+        }
+        kind <- #StringValueKind.Value
+      }
+    (default) => do
+      (fprintf
+        stderr
+        "String: { data: %p, len: %ld } was improperly indexed with index: %ld\n"
+        str.data
+        str.len
+        index)
+      {StringValue
+        inner <- {StringValueUnion
+          error <- {StringErr
+            message <- (string_from_ccstring "String was improperly indexed")
+          }
+        }
+        kind <- #StringValueKind.Error
+      }
+    end
+  end
 end
 
 fun string_new (data: ptr<char> len: size_t) String do

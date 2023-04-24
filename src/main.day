@@ -15,6 +15,7 @@ importc "string.h"
 importc "termios.h"
 importc "unistd.h"
 
+let NEWLINE <- 10
 let QUIT <- 113
 let ENTER <- 13
 let ERASE_IN_LINE <- "\x1b[K"
@@ -25,30 +26,34 @@ let A <- 97
 let S <- 115
 let D <- 100
 
+let BACKSPACE <- 127
+? NOTE: Arrow keys send this as a first byte as well
+let ESC <- 27
+
 fun bred_display_rows (config: BreditorConfig row: size_t) BreditorConfig do
   let beginning <- "~\x1b[K "
   let final <- "\r\n"
   let new_config: BreditorConfig <-
-    (bred_breditor_config_with_buffer
+    (bred_breditor_config_with_command_buffer
       config
-      (string_append_fast config.buffer
+      (string_append_fast config.command_buffer
         (string_from_ccstring beginning)))
   match
     (eq row (sub config.window_data.rows 1)) => new_config
     (eq row (div config.window_data.rows 2)) =>
       (bred_display_rows
-        (bred_breditor_config_with_buffer
+        (bred_breditor_config_with_command_buffer
           new_config
           (string_append_fast
-            (string_append_fast new_config.buffer
+            (string_append_fast new_config.command_buffer
               (string_from_ccstring WELCOME_MESSAGE))
             (string_from_ccstring final)))
         (add row 1))
     (default) =>
       (bred_display_rows
-        (bred_breditor_config_with_buffer
+        (bred_breditor_config_with_command_buffer
           new_config
-          (string_append_fast new_config.buffer
+          (string_append_fast new_config.command_buffer
             (string_from_ccstring final)))
         (add row 1))
   end
@@ -61,20 +66,31 @@ fun bred_display (config: BreditorConfig) BreditorConfig do
           (bred_reset_cursor_buffered config)
         0))
   match
-    (truthy (string_write new_config.buffer)) =>
-      (bred_breditor_config_with_buffer
-        new_config
-        (string_free new_config.buffer))
+    (truthy (string_write new_config.command_buffer)) => do
+      let cleared_config: BreditorConfig <-
+        (bred_breditor_config_with_command_buffer
+          new_config
+          (string_free new_config.command_buffer))
+      match
+        (eq
+          cleared_config.output_buffer.len
+          (cast size_t (string_write cleared_config.output_buffer))) => cleared_config
+        (default) => do
+          (bred_dead "bred_display" 1)
+          cleared_config
+        end
+      end
+    end
     (default) => do
       (bred_dead "bred_display" 1)
-      config
+      new_config
     end
   end
 end
 
 fun bred_loop (config: BreditorConfig) BreditorConfig do
-  let c: char <- (bred_read_char config)
-  let new_config: BreditorConfig <- (bred_process_char config c)
+  let c_ptr: cstring <- (bred_read_char config)
+  let new_config: BreditorConfig <- (bred_process_char config c_ptr)
   match
     (eq new_config.should_exit false) =>
       (bred_loop
@@ -83,75 +99,81 @@ fun bred_loop (config: BreditorConfig) BreditorConfig do
   end
 end
 
-fun bred_process_char (config: BreditorConfig c: char) BreditorConfig do
+fun bred_process_char (config: BreditorConfig c_ptr: cstring) BreditorConfig do
+  let c: char <- (unsafe_index c_ptr 0)
   match
     (falsey c) => config
-    (truthy (iscntrl c)) => match
-      (eq c QUIT) =>
-        (bred_breditor_config_exit
-          (bred_reset_cursor_buffered
-            (bred_clear_screen_buffered config)))
-      (eq c ENTER) =>
-        (bred_breditor_config_with_buffer
-          config
-          (string_append_fast config.buffer
-            (string_from_ccstring "\r\n")))
-      (default) => config
+    (eq c ESC) => do
+      (bred_clear_screen)
+      (bred_reset_cursor)
+      (bred_breditor_config_exit config)
     end
-    (eq c W) =>
-      (bred_set_cursor_buffered
-        (bred_breditor_config_with_cursor
-          config
-          {BredVector
-            x <- config.cursor.x
-            y <- (sub config.cursor.y 1)
-          }))
-    (eq c A) =>
-      (bred_set_cursor_buffered
-        (bred_breditor_config_with_cursor
-          config
-          {BredVector
-            x <- (sub config.cursor.x 1)
-            y <- config.cursor.y
-          }))
-    (eq c S) =>
-      (bred_set_cursor_buffered
-        (bred_breditor_config_with_cursor
-          config
-          {BredVector
-            x <- config.cursor.x
-            y <- (add config.cursor.y 1)
-          }))
-    (eq c D) =>
-      (bred_set_cursor_buffered
-        (bred_breditor_config_with_cursor
-          config
-          {BredVector
-            x <- (add config.cursor.x 1)
-            y <- config.cursor.y
-          }))
-    (eq c QUIT) =>
-      (bred_breditor_config_exit
-        (bred_reset_cursor_buffered
-          (bred_clear_screen_buffered config)))
-    (default) => do
-      (printf "%c" c)
-      (fflush stdout)
-      config
-    end
+    (eq c ENTER) =>
+      (bred_breditor_config_with_output_buffer
+        config
+        (string_append_fast config.output_buffer
+          (string_from_ccstring "\r\n")))
+    (eq c BACKSPACE) =>
+      match
+        (eq
+          0
+          config.output_buffer.len) => config
+        (default) => do
+          let newlineCheckValue: StringValue <- (string_index config.output_buffer (sub config.output_buffer.len 1))
+          match
+            (eq
+              #StringValueKind.Error
+              newlineCheckValue.kind)
+              => do
+                (string_write newlineCheckValue.inner.error.message)
+                (bred_dead "index error when accessing output buffer" 1)
+                config
+              end
+          end
+          let newlineCheck: char <- newlineCheckValue.inner.value
+          let nextConfig: BreditorConfig <-
+            (bred_breditor_config_with_output_buffer
+              config
+              {String
+                data <- config.output_buffer.data
+                len <- (sub config.output_buffer.len 1)
+              })
+          match
+            (and
+              (eq newlineCheck NEWLINE)
+              (gt
+                nextConfig.output_buffer.len
+                0)) =>
+              (bred_breditor_config_with_output_buffer
+                nextConfig
+                {String
+                  data <- nextConfig.output_buffer.data
+                  len <- (sub nextConfig.output_buffer.len 1)
+                })
+            (default) => nextConfig
+          end
+        end
+      end
+    (default) =>
+      (bred_breditor_config_with_output_buffer
+        config
+        (string_append_fast config.output_buffer
+          (string_from_ccstring c_ptr)))
   end
 end
 
-fun bred_read_char (config: BreditorConfig) char do
+fun bred_read_char (config: BreditorConfig) cstring do
   mut input: ptr<char> <- config.input
   (memset input 0 1)
   let read_result: int <- (read STDIN_FILENO input 1)
   match
     (and
       (eq read_result (neg 1))
-      (not (eq errno EAGAIN))) => (bred_dead "read" 1)
-    (default) =>
-      (unsafe_index input 0)
+      (not (eq errno EAGAIN))) => do
+        (bred_dead "read" 1)
+        NULL
+      end
+    (default) => input
   end
 end
 

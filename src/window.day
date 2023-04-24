@@ -25,8 +25,8 @@ fun _bred_send_command(sequence: cstring) int do
 end
 
 fun _bred_send_command_buffered(config: BreditorConfig sequence: ccstring) BreditorConfig do
-  let buffer: String <- (string_append_fast config.buffer (string_from_ccstring sequence))
-  (bred_breditor_config_with_buffer config buffer)
+  let buffer: String <- (string_append_fast config.command_buffer (string_from_ccstring sequence))
+  (bred_breditor_config_with_command_buffer config buffer)
 end
 
 fun bred_clear_screen () int do
