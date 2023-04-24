@@ -119,7 +119,18 @@ fun bred_process_char (config: BreditorConfig c_ptr: cstring) BreditorConfig do
           0
           config.output_buffer.len) => config
         (default) => do
-          let newlineCheck: char <- (unsafe_index config.output_buffer.data (sub config.output_buffer.len 1))
+          let newlineCheckValue: StringValue <- (string_index config.output_buffer (sub config.output_buffer.len 1))
+          match
+            (eq
+              #StringValueKind.Error
+              newlineCheckValue.kind)
+              => do
+                (string_write newlineCheckValue.inner.error.message)
+                (bred_dead "index error when accessing output buffer" 1)
+                config
+              end
+          end
+          let newlineCheck: char <- newlineCheckValue.inner.value
           let nextConfig: BreditorConfig <-
             (bred_breditor_config_with_output_buffer
               config

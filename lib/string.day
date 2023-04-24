@@ -11,9 +11,19 @@ type StringErr struct is
   message: String
 end
 
-type StringValue union is
+type StringValueKind enum is
+  Value <- 0
+  Error <- 1
+end
+
+type StringValueUnion union is
   value: char
-  err: StringErr
+  error: StringErr
+end
+
+type StringValue struct is
+  inner: StringValueUnion
+  kind: StringValueKind
 end
 
 let STRING_ERR_FORMAT <- "%.*s"
@@ -97,7 +107,10 @@ fun string_index (str: String index: size_t) StringValue do
   match
     (gt str.len index) =>
       {StringValue
-        value <- (unsafe_index str.data index)
+        inner <- {StringValueUnion
+          value <- (unsafe_index str.data index)
+        }
+        kind <- #StringValueKind.Value
       }
     (default) => do
       (fprintf
@@ -106,10 +119,13 @@ fun string_index (str: String index: size_t) StringValue do
         str.data
         str.len
         index)
-      mut err: String <- (string_from_ccstring "String was improperly indexed")
       {StringValue
-        value <- 0
-        err <- err
+        inner <- {StringValueUnion
+          error <- {StringErr
+            message <- (string_from_ccstring "String was improperly indexed")
+          }
+        }
+        kind <- #StringValueKind.Error
       }
     end
   end
